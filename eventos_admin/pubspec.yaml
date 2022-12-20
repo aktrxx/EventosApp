@@ -29,9 +29,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cloud_firestore: ^3.1.5
-  firebase_auth: ^3.3.4
-  firebase_core: ^1.20.0
+  cloud_firestore: ^4.2.0
+  firebase_auth: ^4.2.1
+  firebase_core: ^2.4.0
   google_sign_in: ^5.4.2
   font_awesome_flutter: ^10.2.1
   provider: ^6.0.4
@@ -46,7 +46,7 @@ dependencies:
   sliding_up_panel: ^2.0.0+1
   path_provider: ^2.0.11
   image_picker: ^0.8.6
-  firebase_database: ^9.1.7
+  firebase_database: ^10.0.7
   cached_network_image: ^3.2.1
   scaffold_gradient_background: ^1.0.3+1
   flutter_native_splash: ^2.2.9

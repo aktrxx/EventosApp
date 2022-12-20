@@ -1,7 +1,9 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, sized_box_for_whitespace, must_be_immutable, unnecessary_new, use_key_in_widget_constructors, unused_element
 //import 'package:eventos/HomePage.dart';
-import 'package:eventos/HomePage.dart';
+//import 'package:eventos/HomePage.dart';
 import 'package:eventos/google_sign_in.dart';
+//import 'package:eventos/loginpage.dart';
+import 'package:eventos/tempAdminLogin.dart';
 import 'package:firebase_core/firebase_core.dart';
 //import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -55,11 +57,9 @@ Future initialization(BuildContext? context) async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => GoogleSignInProvider(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: HomePage(),
+    return MaterialApp(
+      home: Scaffold(
+        body: TempLoginWidget(),
       ),
     );
   }

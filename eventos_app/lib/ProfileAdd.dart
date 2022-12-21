@@ -50,7 +50,7 @@ class AddProfile extends StatelessWidget {
                 children: [
                   Text('Department :      '),
                   DropdownButtonExample(),
-                ],
+                ], 
               ),
             ),
             ElevatedButton(

@@ -4,6 +4,8 @@ import 'package:eventos/AdminHomePage.dart';
 import 'package:flutter/material.dart';
 
 class TempLoginWidget extends StatefulWidget {
+  const TempLoginWidget({super.key});
+
   @override
   _TempLoginWidgetState createState() => _TempLoginWidgetState();
 }
@@ -68,25 +70,25 @@ class _TempLoginWidgetState extends State<TempLoginWidget> {
                     context,
                     MaterialPageRoute(builder: (context) => AdminHome(1)),
                   );
-                }else if (passwordController.text.toString() == '12345678' &&
+                } else if (passwordController.text.toString() == '12345678' &&
                     emailController.text.toString() == 'IE') {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => AdminHome(2)),
                   );
-                }else if (passwordController.text.toString() == '12345678' &&
+                } else if (passwordController.text.toString() == '12345678' &&
                     emailController.text.toString() == 'GLUGOT') {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => AdminHome(3)),
                   );
-                }else if (passwordController.text.toString() == '12345678' &&
+                } else if (passwordController.text.toString() == '12345678' &&
                     emailController.text.toString() == 'IT') {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => AdminHome(4)),
                   );
-                }else if (passwordController.text.toString() == '12345678' &&
+                } else if (passwordController.text.toString() == '12345678' &&
                     emailController.text.toString() == 'MECH') {
                   Navigator.pushReplacement(
                     context,
@@ -98,13 +100,13 @@ class _TempLoginWidgetState extends State<TempLoginWidget> {
                     context,
                     MaterialPageRoute(builder: (context) => AdminHome(6)),
                   );
-                }else if (passwordController.text.toString() == '12345678' &&
+                } else if (passwordController.text.toString() == '12345678' &&
                     emailController.text.toString() == 'COLLEGE') {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => AdminHome(7)),
                   );
-                }else{
+                } else {
                   Navigator.pop(context);
                 }
               },

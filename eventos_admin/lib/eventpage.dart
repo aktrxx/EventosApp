@@ -136,10 +136,11 @@ class EventPage extends StatelessWidget {
             ),
             body: InkWell(
               onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) =>Poster(imageLink) ,
-      ),),
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Poster(imageLink),
+                ),
+              ),
               child: Column(
                 children: [Poster(imageLink)],
               ),
@@ -178,8 +179,8 @@ class RegisterButton extends StatelessWidget {
     final dbRefProfile = FirebaseDatabase.instance.ref(user!.email);
     // print('${user!.email.toString()} ');
     return ElevatedButton(
-      style:
-          ElevatedButton.styleFrom(primary: Color.fromARGB(255, 255, 128, 24)),
+      style: ElevatedButton.styleFrom(
+          backgroundColor: Color.fromARGB(255, 255, 128, 24)),
       onPressed: () => showDialog<String>(
         context: context,
         builder: (BuildContext context) => AlertDialog(
@@ -215,9 +216,9 @@ class RegisterButton extends StatelessWidget {
                   'Regno': regCon.text.toString(),
                   'email': user!.email.toString()
                 });
-                dbRefProfile.child(regCon.text.toString()).set({
-                  'Event': eventTitle.toString()
-                });
+                dbRefProfile
+                    .child(regCon.text.toString())
+                    .set({'Event': eventTitle.toString()});
 
                 Navigator.pop(context, 'OK');
               },
@@ -291,8 +292,8 @@ class ViewerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      style:
-          ElevatedButton.styleFrom(primary: Color.fromARGB(255, 255, 128, 24)),
+      style: ElevatedButton.styleFrom(
+          backgroundColor: Color.fromARGB(255, 255, 128, 24)),
       // ignore: avoid_returning_null_for_void
       onPressed: (() => Navigator.push(
             context,
@@ -343,7 +344,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
             query: fRef,
             defaultChild: Center(child: Text('Loading...')),
             itemBuilder: (context, snapshot, animation, index) {
-             // increment();
+              // increment();
               return ListTile(
                 leading: Text(snapshot.child('Department').value.toString()),
                 title: Text(

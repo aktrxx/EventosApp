@@ -124,8 +124,7 @@ class _EventAddPageState extends State<EventAddPage> {
 
   @override
   Widget build(BuildContext context) {
-    DateTime dt 
-    = DateTime.now();
+    DateTime dt = DateTime.now();
     return MaterialApp(
       theme: ThemeData(
         brightness: Brightness.light,
@@ -285,14 +284,13 @@ class _EventAddPageState extends State<EventAddPage> {
                     height: 50,
                     child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                            primary: Color.fromARGB(255, 169, 5, 51)),
+                            backgroundColor: Color.fromARGB(255, 169, 5, 51)),
                         onPressed: () {
                           setState(() {
                             loading = true;
                           });
                           databaseRef
-                              .child(dt.millisecondsSinceEpoch
-                                  .toString())
+                              .child(dt.millisecondsSinceEpoch.toString())
                               .set({
                             'Title': postControllerTitle.text.toString(),
                             'Description':
@@ -301,8 +299,7 @@ class _EventAddPageState extends State<EventAddPage> {
                             'Date': '${date.year}/${date.month}/${date.day}',
                             'Time': _timeOfDay.format(context), //.toString(),
                             'eventOrg': widget.eventOrg,
-                            'refe':
-                                dt.millisecondsSinceEpoch.toString()
+                            'refe': dt.millisecondsSinceEpoch.toString()
                           });
                           Navigator.pop(context);
                         },

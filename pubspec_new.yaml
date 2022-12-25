@@ -1,0 +1,52 @@
+name: eventos_admin
+description: Eventos Admin - Event Management Application
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.5.2
+  firebase_database: ^11.2.0
+  
+  # Google Sign-In
+  google_sign_in: ^6.2.2
+  
+  # UI Components
+  cupertino_icons: ^1.0.8
+  font_awesome_flutter: ^10.8.0
+  sliding_up_panel: ^2.0.0+1
+  scaffold_gradient_background: ^1.0.3+1
+  flutter_native_splash: ^2.4.3
+  
+  # Utilities
+  provider: ^6.1.2
+  cached_network_image: ^3.4.1
+  image_picker: ^1.1.2
+  path_provider: ^2.1.5
+  add_2_calendar: ^3.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter_native_splash:
+  color: "#ffffff"
+  # image: images/VK.png  # Uncomment and add your splash image
+
+flutter:
+  uses-material-design: true
+  
+  # Uncomment and add your assets
+  # assets:
+  #   - images/

@@ -179,7 +179,7 @@ class RegisterButton extends StatelessWidget {
     // print('${user!.email.toString()} ');
     return ElevatedButton(
       style:
-          ElevatedButton.styleFrom(primary: Color.fromARGB(255, 255, 128, 24)),
+          ElevatedButton.styleFrom(backgroundColor: Color.fromARGB(255, 255, 128, 24)),
       onPressed: () => showDialog<String>(
         context: context,
         builder: (BuildContext context) => AlertDialog(
@@ -292,7 +292,7 @@ class ViewerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       style:
-          ElevatedButton.styleFrom(primary: Color.fromARGB(255, 255, 128, 24)),
+          ElevatedButton.styleFrom(backgroundColor: Color.fromARGB(255, 255, 128, 24)),
       // ignore: avoid_returning_null_for_void
       onPressed: (() => Navigator.push(
             context,

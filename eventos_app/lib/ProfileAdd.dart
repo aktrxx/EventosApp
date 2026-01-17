@@ -1,10 +1,7 @@
 // ignore_for_file: prefer_const_constructors, curly_braces_in_flow_control_structures, unused_local_variable, prefer_const_literals_to_create_immutables
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eventos/userHomePage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/foundation/key.dart';
-import 'package:flutter/src/widgets/framework.dart';
 
 const List<String> list = <String>[
   'CSE',

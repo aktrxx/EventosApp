@@ -18,6 +18,8 @@ import 'package:firebase_database/firebase_database.dart';
 import 'google_sign_in.dart';
 
 class UserHomePage extends StatefulWidget {
+  const UserHomePage({super.key});
+
   @override
   State<UserHomePage> createState() => _UserHomePageState();
 }

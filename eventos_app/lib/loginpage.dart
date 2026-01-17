@@ -44,7 +44,7 @@ class MyHome extends StatelessWidget {
                 //TextField(),
                 ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                        primary: Colors.white,
+                        backgroundColor: Colors.white,
                         onPrimary: Colors.black,
                         minimumSize: Size(double.infinity, 50)),
                     icon: FaIcon(FontAwesomeIcons.google),

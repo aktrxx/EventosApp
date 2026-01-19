@@ -1,6 +1,10 @@
 // ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors
 
-import 'package:eventos_user_app/utils/colors.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_page.dart';
+import '../utils/colors.dart';
 import 'package:flutter/material.dart';
 
 class EventDetailPage extends StatefulWidget {
@@ -15,29 +19,126 @@ class EventDetailPage extends StatefulWidget {
 class _EventDetailPageState extends State<EventDetailPage> {
   bool isRegistered = false;
   bool isLoading = false;
+  int? registrationId;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkRegistrationStatus();
+  }
+
+  Future<void> _checkRegistrationStatus() async {
+    // TODO: Check if user is already registered for this event
+    // This would require an API endpoint to check registration status
+  }
 
   Future<void> _handleRegister() async {
     setState(() {
       isLoading = true;
     });
 
-    // TODO: Connect to Django API
-    await Future.delayed(Duration(seconds: 1));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
 
-    setState(() {
-      isRegistered = !isRegistered;
-      isLoading = false;
-    });
+      if (token == null) {
+        _showSessionExpiredAndLogout();
+        return;
+      }
 
+      if (isRegistered && registrationId != null) {
+        // Withdraw registration
+        final response = await http.delete(
+          Uri.parse(
+              'http://10.0.2.2:8000/api/students/withdraw/$registrationId/'),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          setState(() {
+            isRegistered = false;
+            registrationId = null;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Registration withdrawn successfully'),
+              backgroundColor: AppColors.warning,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['message'] ?? 'Failed to withdraw'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        // Register for event
+        final response = await http.post(
+          Uri.parse('http://10.0.2.2:8000/api/students/register-event/'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: json.encode({
+            'event_id': widget.event['id'],
+          }),
+        );
+
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          setState(() {
+            isRegistered = true;
+            registrationId = data['data']['id'];
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Successfully registered for the event!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['message'] ?? 'Registration failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connection error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  void _showSessionExpiredAndLogout() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          isRegistered
-              ? 'Successfully registered for the event!'
-              : 'Registration withdrawn',
-        ),
-        backgroundColor: isRegistered ? AppColors.success : AppColors.warning,
+        content: Text('Session expired. Please login again.'),
+        backgroundColor: Colors.red,
       ),
+    );
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+      (route) => false,
     );
   }
 

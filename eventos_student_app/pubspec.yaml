@@ -1,5 +1,5 @@
-name: eventos_user_app
-description: A Flutter user app for event discovery and registration
+name: eventos_student_app
+description: A Flutter student app for event discovery and registration
 publish_to: 'none'
 version: 1.0.0+1
 

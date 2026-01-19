@@ -1,7 +1,11 @@
 // ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors
 
-import 'package:eventos_user_app/pages/event_detail_page.dart';
-import 'package:eventos_user_app/utils/colors.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'event_detail_page.dart';
+import 'login_page.dart';
+import '../utils/colors.dart';
 import 'package:flutter/material.dart';
 
 class EventsListPage extends StatefulWidget {
@@ -20,6 +24,7 @@ class EventsListPage extends StatefulWidget {
 class _EventsListPageState extends State<EventsListPage> {
   List<Map<String, dynamic>> events = [];
   bool isLoading = true;
+  String errorMessage = '';
 
   @override
   void initState() {
@@ -30,35 +35,65 @@ class _EventsListPageState extends State<EventsListPage> {
   Future<void> _fetchEvents() async {
     setState(() {
       isLoading = true;
+      errorMessage = '';
     });
 
-    // TODO: Connect to Django API
-    await Future.delayed(Duration(seconds: 1));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
 
-    // Dummy data for now
-    setState(() {
-      events = [
-        {
-          'id': 1,
-          'title': 'Tech Workshop 2026',
-          'description': 'Annual technical workshop with hands-on sessions',
-          'date': '2026-02-15',
-          'time': '14:00:00',
-          'venue': 'Main Auditorium',
-          'organization': widget.organizationCode,
+      if (token == null) {
+        _showSessionExpiredAndLogout();
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8000/api/events/'),
+        headers: {
+          'Authorization': 'Bearer $token',
         },
-        {
-          'id': 2,
-          'title': 'Coding Competition',
-          'description': 'Inter-college coding competition',
-          'date': '2026-03-10',
-          'time': '10:00:00',
-          'venue': 'Computer Lab',
-          'organization': widget.organizationCode,
-        },
-      ];
-      isLoading = false;
-    });
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        final List<dynamic> allEvents = responseData['data'];
+
+        setState(() {
+          events = allEvents
+              .where(
+                  (event) => event['organization'] == widget.organizationCode)
+              .map((event) => event as Map<String, dynamic>)
+              .toList();
+          isLoading = false;
+        });
+      } else if (response.statusCode == 401) {
+        _showSessionExpiredAndLogout();
+      } else {
+        setState(() {
+          errorMessage = 'Failed to load events';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Connection error: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  void _showSessionExpiredAndLogout() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Session expired. Please login again.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+      (route) => false,
+    );
   }
 
   @override
@@ -71,31 +106,50 @@ class _EventsListPageState extends State<EventsListPage> {
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : events.isEmpty
+          : errorMessage.isNotEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.event_busy, size: 80, color: Colors.grey),
+                      Icon(Icons.error_outline, size: 80, color: Colors.red),
                       SizedBox(height: 16),
                       Text(
-                        'No events available',
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                        errorMessage,
+                        style: TextStyle(fontSize: 16, color: Colors.red),
+                      ),
+                      SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _fetchEvents,
+                        child: Text('Retry'),
                       ),
                     ],
                   ),
                 )
-              : RefreshIndicator(
-                  onRefresh: _fetchEvents,
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(16),
-                    itemCount: events.length,
-                    itemBuilder: (context, index) {
-                      final event = events[index];
-                      return EventCard(event: event);
-                    },
-                  ),
-                ),
+              : events.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.event_busy, size: 80, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'No events available',
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetchEvents,
+                      child: ListView.builder(
+                        padding: EdgeInsets.all(16),
+                        itemCount: events.length,
+                        itemBuilder: (context, index) {
+                          final event = events[index];
+                          return EventCard(event: event);
+                        },
+                      ),
+                    ),
     );
   }
 }

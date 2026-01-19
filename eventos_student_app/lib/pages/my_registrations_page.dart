@@ -1,7 +1,11 @@
 // ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors
 
-import 'package:eventos_user_app/pages/event_detail_page.dart';
-import 'package:eventos_user_app/utils/colors.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'event_detail_page.dart';
+import 'login_page.dart';
+import '../utils/colors.dart';
 import 'package:flutter/material.dart';
 
 class MyRegistrationsPage extends StatefulWidget {
@@ -12,6 +16,7 @@ class MyRegistrationsPage extends StatefulWidget {
 class _MyRegistrationsPageState extends State<MyRegistrationsPage> {
   List<Map<String, dynamic>> registrations = [];
   bool isLoading = true;
+  String errorMessage = '';
 
   @override
   void initState() {
@@ -22,31 +27,59 @@ class _MyRegistrationsPageState extends State<MyRegistrationsPage> {
   Future<void> _fetchRegistrations() async {
     setState(() {
       isLoading = true;
+      errorMessage = '';
     });
 
-    // TODO: Connect to Django API
-    await Future.delayed(Duration(seconds: 1));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
 
-    // Dummy data for now
-    setState(() {
-      registrations = [
-        {
-          'id': 1,
-          'event': {
-            'id': 1,
-            'title': 'Tech Workshop 2026',
-            'description': 'Annual technical workshop',
-            'date': '2026-02-15',
-            'time': '14:00:00',
-            'venue': 'Main Auditorium',
-            'organization': 'CSI',
-          },
-          'registered_at': '2026-01-18',
-          'status': 'Confirmed',
+      if (token == null) {
+        _showSessionExpiredAndLogout();
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8000/api/students/my-registrations/'),
+        headers: {
+          'Authorization': 'Bearer $token',
         },
-      ];
-      isLoading = false;
-    });
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        setState(() {
+          registrations = List<Map<String, dynamic>>.from(responseData['data']);
+          isLoading = false;
+        });
+      } else if (response.statusCode == 401) {
+        _showSessionExpiredAndLogout();
+      } else {
+        setState(() {
+          errorMessage = 'Failed to load registrations';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Connection error: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  void _showSessionExpiredAndLogout() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Session expired. Please login again.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+      (route) => false,
+    );
   }
 
   @override
@@ -100,48 +133,69 @@ class _MyRegistrationsPageState extends State<MyRegistrationsPage> {
                   ),
                   child: isLoading
                       ? Center(child: CircularProgressIndicator())
-                      : registrations.isEmpty
+                      : errorMessage.isNotEmpty
                           ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
-                                    Icons.event_busy,
-                                    size: 80,
-                                    color: Colors.grey,
-                                  ),
+                                  Icon(Icons.error_outline,
+                                      size: 80, color: Colors.red),
                                   SizedBox(height: 16),
                                   Text(
-                                    'No registrations yet',
+                                    errorMessage,
                                     style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey,
-                                    ),
+                                        fontSize: 16, color: Colors.red),
                                   ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'Register for events to see them here',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey,
-                                    ),
+                                  SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: _fetchRegistrations,
+                                    child: Text('Retry'),
                                   ),
                                 ],
                               ),
                             )
-                          : RefreshIndicator(
-                              onRefresh: _fetchRegistrations,
-                              child: ListView.builder(
-                                padding: EdgeInsets.all(16),
-                                itemCount: registrations.length,
-                                itemBuilder: (context, index) {
-                                  final registration = registrations[index];
-                                  return RegistrationCard(
-                                    registration: registration,
-                                  );
-                                },
-                              ),
-                            ),
+                          : registrations.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.event_busy,
+                                        size: 80,
+                                        color: Colors.grey,
+                                      ),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'No registrations yet',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Register for events to see them here',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : RefreshIndicator(
+                                  onRefresh: _fetchRegistrations,
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.all(16),
+                                    itemCount: registrations.length,
+                                    itemBuilder: (context, index) {
+                                      final registration = registrations[index];
+                                      return RegistrationCard(
+                                        registration: registration,
+                                      );
+                                    },
+                                  ),
+                                ),
                 ),
               ),
             ],
@@ -159,7 +213,7 @@ class RegistrationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final event = registration['event'];
+    final event = registration['event_details'] ?? registration['event'];
 
     return Card(
       margin: EdgeInsets.only(bottom: 16),
@@ -215,7 +269,8 @@ class RegistrationCard extends StatelessWidget {
               SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: AppColors.primary),
+                  Icon(Icons.calendar_today,
+                      size: 16, color: AppColors.primary),
                   SizedBox(width: 8),
                   Text(
                     event['date'] ?? '',

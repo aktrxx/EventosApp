@@ -1,8 +1,11 @@
 // ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors
 
-import 'package:eventos_user_app/pages/home_page.dart';
-import 'package:eventos_user_app/pages/signup_page.dart';
-import 'package:eventos_user_app/utils/colors.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'home_page.dart';
+import 'signup_page.dart';
+import '../utils/colors.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -25,23 +28,82 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-      // TODO: Connect to Django API
-      await Future.delayed(Duration(seconds: 1));
+    setState(() {
+      _isLoading = true;
+    });
 
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:8000/api/students/login/'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': emailController.text.trim(),
+          'password': passwordController.text,
+        }),
+      );
+
+      final data = json.decode(response.body);
+
+      if (data['success'] == true) {
+        // Save JWT tokens
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          'access_token',
+          data['data']['tokens']['access'],
+        );
+        await prefs.setString(
+          'refresh_token',
+          data['data']['tokens']['refresh'],
+        );
+        await prefs.setString(
+            'student_id', data['data']['user']['id'].toString());
+        await prefs.setString('student_email', data['data']['user']['email']);
+        await prefs.setString(
+          'student_name',
+          '${data['data']['user']['first_name']} ${data['data']['user']['last_name']}',
+        );
+        await prefs.setString('department', data['data']['user']['department']);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Welcome back, ${data['data']['user']['first_name']}!',
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+      } else {
+        String errorMessage = data['message'] ?? 'Login failed';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connection error: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } finally {
       setState(() {
         _isLoading = false;
       });
-
-      // Navigate to home page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
     }
   }
 
@@ -118,7 +180,8 @@ class _LoginPageState extends State<LoginPage> {
                               controller: emailController,
                               keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
-                                labelText: 'Email',
+                                labelText: 'College Email',
+                                hintText: 'yourname@student.tce.edu',
                                 prefixIcon: Icon(Icons.email),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -128,8 +191,8 @@ class _LoginPageState extends State<LoginPage> {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email';
                                 }
-                                if (!value.contains('@')) {
-                                  return 'Please enter a valid email';
+                                if (!value.endsWith('@student.tce.edu')) {
+                                  return 'Must use college email (@student.tce.edu)';
                                 }
                                 return null;
                               },

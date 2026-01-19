@@ -1,7 +1,10 @@
 // ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors
 
-import 'package:eventos_user_app/pages/home_page.dart';
-import 'package:eventos_user_app/utils/colors.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'home_page.dart';
+import '../utils/colors.dart';
 import 'package:flutter/material.dart';
 
 class SignupPage extends StatefulWidget {
@@ -11,53 +14,118 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   final _formKey = GlobalKey<FormState>();
-  final nameController = TextEditingController();
+  final firstNameController = TextEditingController();
+  final lastNameController = TextEditingController();
   final emailController = TextEditingController();
-  final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  String selectedDepartment = 'CSE';
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
-    nameController.dispose();
+    firstNameController.dispose();
+    lastNameController.dispose();
     emailController.dispose();
-    phoneController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSignup() async {
-    if (_formKey.currentState!.validate()) {
-      if (passwordController.text != confirmPasswordController.text) {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (passwordController.text != confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Passwords do not match'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:8000/api/students/signup/'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': emailController.text.trim(),
+          'password': passwordController.text,
+          'password_confirm': confirmPasswordController.text,
+          'first_name': firstNameController.text.trim(),
+          'last_name': lastNameController.text.trim(),
+          'department': selectedDepartment,
+        }),
+      );
+
+      final data = json.decode(response.body);
+
+      if (data['success'] == true) {
+        // Save JWT tokens
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          'access_token',
+          data['data']['tokens']['access'],
+        );
+        await prefs.setString(
+          'refresh_token',
+          data['data']['tokens']['refresh'],
+        );
+        await prefs.setString(
+            'student_id', data['data']['user']['id'].toString());
+        await prefs.setString('student_email', data['data']['user']['email']);
+        await prefs.setString(
+          'student_name',
+          '${data['data']['user']['first_name']} ${data['data']['user']['last_name']}',
+        );
+        await prefs.setString('department', data['data']['user']['department']);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Passwords do not match'),
-            backgroundColor: AppColors.error,
+            content: Text('Account created successfully! Welcome!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
-        return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+      } else {
+        String errorMessage = data['message'] ?? 'Signup failed';
+        if (data['errors'] != null) {
+          errorMessage = data['errors'].values.first[0];
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
-
-      setState(() {
-        _isLoading = true;
-      });
-
-      // TODO: Connect to Django API
-      await Future.delayed(Duration(seconds: 1));
-
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connection error: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } finally {
       setState(() {
         _isLoading = false;
       });
-
-      // Navigate to home page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
     }
   }
 
@@ -111,11 +179,11 @@ class _SignupPageState extends State<SignupPage> {
                         children: [
                           SizedBox(height: 16),
 
-                          // Name Field
+                          // First Name Field
                           TextFormField(
-                            controller: nameController,
+                            controller: firstNameController,
                             decoration: InputDecoration(
-                              labelText: 'Full Name',
+                              labelText: 'First Name',
                               prefixIcon: Icon(Icons.person),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -123,7 +191,26 @@ class _SignupPageState extends State<SignupPage> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter your name';
+                                return 'Please enter your first name';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 16),
+
+                          // Last Name Field
+                          TextFormField(
+                            controller: lastNameController,
+                            decoration: InputDecoration(
+                              labelText: 'Last Name',
+                              prefixIcon: Icon(Icons.person_outline),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your last name';
                               }
                               return null;
                             },
@@ -135,7 +222,8 @@ class _SignupPageState extends State<SignupPage> {
                             controller: emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
-                              labelText: 'Email',
+                              labelText: 'College Email',
+                              hintText: 'yourname@student.tce.edu',
                               prefixIcon: Icon(Icons.email),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -145,30 +233,44 @@ class _SignupPageState extends State<SignupPage> {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your email';
                               }
-                              if (!value.contains('@')) {
-                                return 'Please enter a valid email';
+                              if (!value.endsWith('@student.tce.edu')) {
+                                return 'Must use college email (@student.tce.edu)';
                               }
                               return null;
                             },
                           ),
                           SizedBox(height: 16),
 
-                          // Phone Field
-                          TextFormField(
-                            controller: phoneController,
-                            keyboardType: TextInputType.phone,
+                          // Department Dropdown
+                          DropdownButtonFormField<String>(
+                            value: selectedDepartment,
                             decoration: InputDecoration(
-                              labelText: 'Phone Number',
-                              prefixIcon: Icon(Icons.phone),
+                              labelText: 'Department',
+                              prefixIcon: Icon(Icons.school),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your phone number';
-                              }
-                              return null;
+                            items: [
+                              DropdownMenuItem(
+                                value: 'CSE',
+                                child: Text('Computer Science and Engineering'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'EEE',
+                                child: Text(
+                                    'Electrical and Electronics Engineering'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'ECE',
+                                child: Text(
+                                    'Electronics and Communication Engineering'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                selectedDepartment = value!;
+                              });
                             },
                           ),
                           SizedBox(height: 16),

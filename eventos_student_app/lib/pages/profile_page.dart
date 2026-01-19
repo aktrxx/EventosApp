@@ -1,7 +1,8 @@
 // ignore_for_file: prefer_const_constructors, use_key_in_widget_constructors
 
-import 'package:eventos_user_app/pages/login_page.dart';
-import 'package:eventos_user_app/utils/colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_page.dart';
+import '../utils/colors.dart';
 import 'package:flutter/material.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -10,22 +11,75 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // Dummy user data
-  final Map<String, String> userData = {
-    'name': 'John Doe',
-    'email': 'john.doe@example.com',
-    'phone': '+91 9876543210',
+  Map<String, String> userData = {
+    'name': 'Loading...',
+    'email': 'Loading...',
+    'department': 'Loading...',
   };
 
-  Future<void> _handleLogout() async {
-    // TODO: Clear SharedPreferences and logout
-    await Future.delayed(Duration(milliseconds: 500));
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
-      (route) => false,
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userData = {
+        'name': prefs.getString('student_name') ?? 'User',
+        'email': prefs.getString('student_email') ?? '',
+        'department':
+            _getDepartmentFullName(prefs.getString('department') ?? ''),
+      };
+    });
+  }
+
+  String _getDepartmentFullName(String code) {
+    switch (code) {
+      case 'CSE':
+        return 'Computer Science and Engineering';
+      case 'EEE':
+        return 'Electrical and Electronics Engineering';
+      case 'ECE':
+        return 'Electronics and Communication Engineering';
+      default:
+        return code;
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text('Logout'),
+        content: Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Logout'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+          ),
+        ],
+      ),
     );
+
+    if (confirm == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -114,9 +168,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       SizedBox(height: 12),
                       ProfileInfoCard(
-                        icon: Icons.phone,
-                        title: 'Phone',
-                        value: userData['phone'] ?? '',
+                        icon: Icons.school,
+                        title: 'Department',
+                        value: userData['department'] ?? '',
                       ),
                       SizedBox(height: 32),
 
@@ -166,7 +220,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         onTap: () {
                           // TODO: Navigate to notifications settings
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Notifications coming soon')),
+                            SnackBar(
+                                content: Text('Notifications coming soon')),
                           );
                         },
                       ),
@@ -177,31 +232,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) => AlertDialog(
-                                title: Text('Logout'),
-                                content: Text('Are you sure you want to logout?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      _handleLogout();
-                                    },
-                                    child: Text('Logout'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: AppColors.error,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                          onPressed: _handleLogout,
                           icon: Icon(Icons.logout),
                           label: Text(
                             'Logout',

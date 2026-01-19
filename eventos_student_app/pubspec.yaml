@@ -1,0 +1,40 @@
+name: eventos_user_app
+description: A Flutter user app for event discovery and registration
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP client for API calls
+  http: ^1.1.0
+  
+  # Local storage for tokens
+  shared_preferences: ^2.2.2
+  
+  # Icons
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # Uncomment for custom assets
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+  
+  # fonts:
+  #   - family: CustomFont
+  #     fonts:
+  #       - asset: fonts/CustomFont-Regular.ttf
+  #       - asset: fonts/CustomFont-Bold.ttf
+  #         weight: 700

@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'package:eventos_admin_new/eventadd.dart';
+import 'package:eventos_admin_new/tempAdminLogin.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -119,7 +120,15 @@ class _AddEventState extends State<AddEvent> {
   Future<void> _handleLogout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    Navigator.popUntil(context, (route) => route.isFirst);
+
+    // Navigate to login page and remove all previous routes
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(body: TempLoginWidget()),
+      ),
+      (route) => false, // Remove all previous routes
+    );
   }
 
   @override

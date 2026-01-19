@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, unused_field, prefer_const_literals_to_create_immutables, avoid_unnecessary_containers, use_key_in_widget_constructors
 
 import 'dart:convert';
+import 'package:eventos_admin_new/tempAdminLogin.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -133,7 +134,13 @@ class _EventEditPageState extends State<EventEditPage> {
               backgroundColor: Colors.red,
             ),
           );
-          Navigator.popUntil(context, (route) => route.isFirst);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => Scaffold(body: TempLoginWidget()),
+            ),
+            (route) => false,
+          );
           return;
         }
 

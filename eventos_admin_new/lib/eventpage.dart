@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'package:eventos_admin_new/eventedit.dart';
+import 'package:eventos_admin_new/tempAdminLogin.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -121,7 +122,13 @@ class _EventPageState extends State<EventPage> {
             backgroundColor: Colors.red,
           ),
         );
-        Navigator.popUntil(context, (route) => route.isFirst);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Scaffold(body: TempLoginWidget()),
+          ),
+          (route) => false,
+        );
         return;
       }
 

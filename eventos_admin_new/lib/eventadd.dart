@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, unused_field, prefer_const_literals_to_create_immutables, avoid_unnecessary_containers, use_key_in_widget_constructors
 
 import 'dart:convert';
+import 'package:eventos_admin_new/tempAdminLogin.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,7 +18,7 @@ class EventAddPage extends StatefulWidget {
 class _EventAddPageState extends State<EventAddPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  
+
   // Form controllers
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
@@ -91,7 +92,13 @@ class _EventAddPageState extends State<EventAddPage> {
               backgroundColor: Colors.red,
             ),
           );
-          Navigator.popUntil(context, (route) => route.isFirst);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => Scaffold(body: TempLoginWidget()),
+            ),
+            (route) => false,
+          );
           return;
         }
 
@@ -129,7 +136,10 @@ class _EventAddPageState extends State<EventAddPage> {
           );
 
           // Go back to home page
-          Navigator.pop(context, true); // Return true to indicate refresh needed
+          Navigator.pop(
+            context,
+            true,
+          ); // Return true to indicate refresh needed
         } else {
           final data = json.decode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -186,7 +196,10 @@ class _EventAddPageState extends State<EventAddPage> {
                     padding: EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        Icon(Icons.business, color: Color.fromARGB(255, 169, 5, 51)),
+                        Icon(
+                          Icons.business,
+                          color: Color.fromARGB(255, 169, 5, 51),
+                        ),
                         SizedBox(width: 10),
                         Text(
                           'Organization: ${widget.eventOrg}',
@@ -341,7 +354,9 @@ class _EventAddPageState extends State<EventAddPage> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : Icon(Icons.save),

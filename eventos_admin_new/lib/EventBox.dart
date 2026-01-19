@@ -2,7 +2,6 @@
 
 import 'package:eventos_admin_new/eventpage.dart';
 import 'package:flutter/material.dart';
-import './img.dart';
 
 class EventBox extends StatelessWidget {
   String titleText;
@@ -13,6 +12,9 @@ class EventBox extends StatelessWidget {
   String eventOrgV;
   String eventOrg;
   String refe;
+  String venue;
+  String createdBy;
+  final Function()? onEventDeleted;
 
   EventBox({
     required this.eventOrg,
@@ -23,13 +25,17 @@ class EventBox extends StatelessWidget {
     required this.dateTime,
     required this.imageLink,
     required this.pageFrom,
+    this.venue = '',
+    this.createdBy = '',
+    this.onEventDeleted,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        // Navigate and wait for result
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => EventPage(
@@ -40,16 +46,21 @@ class EventBox extends StatelessWidget {
               refe: refe,
               eventDescription: descrText,
               pageFrom: pageFrom,
+              dateTime: dateTime,
+              venue: venue,
             ),
           ),
         );
+
+        // If event was deleted or updated, trigger refresh
+        if (result == true && onEventDeleted != null) {
+          onEventDeleted!();
+        }
       },
       child: Card(
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Container(
           height: 120,
           child: Row(
@@ -76,14 +87,10 @@ class EventBox extends StatelessWidget {
                             );
                           },
                         )
-                      : Icon(
-                          Icons.event,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
+                      : Icon(Icons.event, size: 40, color: Colors.grey),
                 ),
               ),
-              
+
               // Event Details
               Expanded(
                 child: Padding(
@@ -102,7 +109,7 @@ class EventBox extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      
+
                       // Date/Time
                       Row(
                         children: [
@@ -125,7 +132,7 @@ class EventBox extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
+
                       // Organization
                       Row(
                         children: [
@@ -152,7 +159,7 @@ class EventBox extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Arrow Icon
               Padding(
                 padding: EdgeInsets.only(right: 8),

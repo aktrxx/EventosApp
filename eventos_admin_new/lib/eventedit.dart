@@ -5,29 +5,95 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-class EventAddPage extends StatefulWidget {
+class EventEditPage extends StatefulWidget {
+  final String eventId;
   final String eventOrg;
+  final Map<String, dynamic> eventData;
 
-  EventAddPage(this.eventOrg);
+  EventEditPage({
+    required this.eventId,
+    required this.eventOrg,
+    required this.eventData,
+  });
 
   @override
-  State<EventAddPage> createState() => _EventAddPageState();
+  State<EventEditPage> createState() => _EventEditPageState();
 }
 
-class _EventAddPageState extends State<EventAddPage> {
+class _EventEditPageState extends State<EventEditPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  
+
   // Form controllers
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController dateController = TextEditingController();
-  final TextEditingController timeController = TextEditingController();
-  final TextEditingController venueController = TextEditingController();
+  late TextEditingController titleController;
+  late TextEditingController descriptionController;
+  late TextEditingController dateController;
+  late TextEditingController timeController;
+  late TextEditingController venueController;
 
   // For API date/time format
   String? apiDate;
   String? apiTime;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize controllers with existing data
+    titleController = TextEditingController(
+      text: widget.eventData['title'] ?? '',
+    );
+    descriptionController = TextEditingController(
+      text: widget.eventData['description'] ?? '',
+    );
+    venueController = TextEditingController(
+      text: widget.eventData['venue'] ?? '',
+    );
+
+    // Parse and set existing date
+    if (widget.eventData['date'] != null) {
+      try {
+        final dateParts = widget.eventData['date'].split('-');
+        if (dateParts.length == 3) {
+          final year = dateParts[0];
+          final month = dateParts[1];
+          final day = dateParts[2];
+          dateController = TextEditingController(text: "$day/$month/$year");
+          apiDate = widget.eventData['date']; // Keep original format
+        }
+      } catch (e) {
+        dateController = TextEditingController();
+      }
+    } else {
+      dateController = TextEditingController();
+    }
+
+    // Parse and set existing time
+    if (widget.eventData['time'] != null) {
+      try {
+        final timeParts = widget.eventData['time'].split(':');
+        if (timeParts.length >= 2) {
+          int hour = int.parse(timeParts[0]);
+          int minute = int.parse(timeParts[1]);
+
+          // Convert to 12-hour format for display
+          String period = hour >= 12 ? 'PM' : 'AM';
+          if (hour > 12) hour -= 12;
+          if (hour == 0) hour = 12;
+
+          timeController = TextEditingController(
+            text:
+                "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period",
+          );
+          apiTime = widget.eventData['time']; // Keep original format
+        }
+      } catch (e) {
+        timeController = TextEditingController();
+      }
+    } else {
+      timeController = TextEditingController();
+    }
+  }
 
   @override
   void dispose() {
@@ -39,31 +105,7 @@ class _EventAddPageState extends State<EventAddPage> {
     super.dispose();
   }
 
-  // Map organization display name to API code
-  String _getOrganizationCode(String displayName) {
-    switch (displayName) {
-      case 'CSI Association':
-        return 'CSI';
-      case 'IE Association':
-        return 'IE';
-      case 'GLUGOT TCE':
-        return 'GLUGOT';
-      case 'IT':
-        return 'IT';
-      case 'MECH':
-        return 'MECH';
-      case 'SPORTS':
-        return 'SPORTS';
-      case 'COLLEGE':
-        return 'COLLEGE';
-      case 'Admin':
-        return 'ADMIN';
-      default:
-        return 'ADMIN';
-    }
-  }
-
-  Future<void> _saveEvent() async {
+  Future<void> _updateEvent() async {
     if (_formKey.currentState!.validate()) {
       if (apiDate == null || apiTime == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,12 +137,11 @@ class _EventAddPageState extends State<EventAddPage> {
           return;
         }
 
-        // Get organization code
-        String orgCode = _getOrganizationCode(widget.eventOrg);
-
-        // API call to create event
-        final response = await http.post(
-          Uri.parse('http://10.0.2.2:8000/api/events/create/'),
+        // API call to update event
+        final response = await http.put(
+          Uri.parse(
+            'http://10.0.2.2:8000/api/events/${widget.eventId}/update/',
+          ),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
@@ -108,7 +149,6 @@ class _EventAddPageState extends State<EventAddPage> {
           body: json.encode({
             'title': titleController.text.trim(),
             'description': descriptionController.text.trim(),
-            'organization': orgCode,
             'date': apiDate,
             'time': apiTime,
             'venue': venueController.text.trim(),
@@ -119,22 +159,21 @@ class _EventAddPageState extends State<EventAddPage> {
           _isLoading = false;
         });
 
-        if (response.statusCode == 201) {
-          // Success - event created
+        if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Event created successfully!'),
+              content: Text('Event updated successfully!'),
               backgroundColor: Colors.green,
             ),
           );
 
-          // Go back to home page
-          Navigator.pop(context, true); // Return true to indicate refresh needed
+          // Go back with success flag
+          Navigator.pop(context, true);
         } else {
           final data = json.decode(response.body);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(data['message'] ?? 'Failed to create event'),
+              content: Text(data['message'] ?? 'Failed to update event'),
               backgroundColor: Colors.red,
             ),
           );
@@ -159,7 +198,7 @@ class _EventAddPageState extends State<EventAddPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color.fromARGB(255, 169, 5, 51),
-        title: Text('Add Event'),
+        title: Text('Edit Event'),
         elevation: 0,
       ),
       body: Container(
@@ -186,13 +225,40 @@ class _EventAddPageState extends State<EventAddPage> {
                     padding: EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        Icon(Icons.business, color: Color.fromARGB(255, 169, 5, 51)),
+                        Icon(
+                          Icons.business,
+                          color: Color.fromARGB(255, 169, 5, 51),
+                        ),
                         SizedBox(width: 10),
                         Text(
                           'Organization: ${widget.eventOrg}',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+
+                // Info card
+                Card(
+                  color: Colors.blue[50],
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Organization cannot be changed after creation',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue[900],
+                            ),
                           ),
                         ),
                       ],
@@ -261,7 +327,9 @@ class _EventAddPageState extends State<EventAddPage> {
                   onTap: () async {
                     DateTime? pickedDate = await showDatePicker(
                       context: context,
-                      initialDate: DateTime.now(),
+                      initialDate: apiDate != null
+                          ? DateTime.parse(apiDate!)
+                          : DateTime.now(),
                       firstDate: DateTime.now(),
                       lastDate: DateTime(2030),
                     );
@@ -297,7 +365,12 @@ class _EventAddPageState extends State<EventAddPage> {
                   onTap: () async {
                     TimeOfDay? pickedTime = await showTimePicker(
                       context: context,
-                      initialTime: TimeOfDay.now(),
+                      initialTime: apiTime != null
+                          ? TimeOfDay(
+                              hour: int.parse(apiTime!.split(':')[0]),
+                              minute: int.parse(apiTime!.split(':')[1]),
+                            )
+                          : TimeOfDay.now(),
                     );
                     if (pickedTime != null) {
                       // Display format
@@ -329,24 +402,26 @@ class _EventAddPageState extends State<EventAddPage> {
                 ),
                 SizedBox(height: 24),
 
-                // Save Button
+                // Update Button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _saveEvent,
+                    onPressed: _isLoading ? null : _updateEvent,
                     icon: _isLoading
                         ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : Icon(Icons.save),
                     label: Text(
-                      _isLoading ? 'Saving...' : 'Save Event',
+                      _isLoading ? 'Updating...' : 'Update Event',
                       style: TextStyle(fontSize: 18),
                     ),
                     style: ElevatedButton.styleFrom(
